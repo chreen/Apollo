@@ -73,6 +73,8 @@ _deps
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/**/.name
+.idea/**/discord.xml
 
 # AWS User-specific
 .idea/**/aws.xml
