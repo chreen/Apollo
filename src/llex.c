@@ -41,6 +41,7 @@ static const char *const luaX_tokens[] = {
         "in", "local", "nil", "not", "or", "repeat",
         "return", "then", "true", "until", "while",
         "//", "..", "...", "==", ">=", "<=", "~=",
+        "+=", "-=", "*=", "/=", "%=", "^=", "..=", "++",
         "<<", ">>", "::", "<eof>",
         "<number>", "<integer>", "<name>", "<string>"
 };
@@ -471,6 +472,10 @@ static int llex(LexState *ls, SemInfo *seminfo) {
          }
          case '-': {  /* '-' or '--' (comment) */
             next(ls);
+            if (ls-> current == '=') {
+               next(ls);
+               return TK_CSUB;
+            }
             if (ls->current != '-') return '-';
             /* else is a comment */
             next(ls);
@@ -514,10 +519,32 @@ static int llex(LexState *ls, SemInfo *seminfo) {
             else if (check_next1(ls, '>')) return TK_SHR;
             else return '>';
          }
+         case '+': {
+            next(ls);
+            if (check_next1(ls, '=')) return TK_CADD;
+            else if (check_next1(ls, '+')) return TK_INC;
+            else return '+';
+         }
+         case '*': {
+            next(ls);
+            if (check_next1(ls, '=')) return TK_CMUL;
+            else return '*';
+         }
          case '/': {
             next(ls);
             if (check_next1(ls, '/')) return TK_IDIV;
+            else if (check_next1(ls, '=')) return TK_CDIV;
             else return '/';
+         }
+         case '%': {
+            next(ls);
+            if (check_next1(ls, '=')) return TK_CMOD;
+            else return '%';
+         }
+         case '^': {
+            next(ls);
+            if (check_next1(ls, '=')) return TK_CPOW;
+            else return '^';
          }
          case '~': {
             next(ls);
@@ -539,6 +566,8 @@ static int llex(LexState *ls, SemInfo *seminfo) {
             if (check_next1(ls, '.')) {
                if (check_next1(ls, '.'))
                   return TK_DOTS;   /* '...' */
+               else if (check_next1(ls, '='))
+                     return TK_CCONCAT;
                else return TK_CONCAT;   /* '..' */
             } else if (!lisdigit(ls->current)) return '.';
             else return read_numeral(ls, seminfo);

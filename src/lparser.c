@@ -1228,6 +1228,55 @@ static void assignment(LexState *ls, struct LHS_assign *lh, int nvars) {
 }
 
 
+static void compound_assignment(LexState *ls, expdesc *v) {
+   int line;
+   BinOpr op = OPR_NOBINOPR;
+   FuncState *fs = ls->fs;
+   expdesc e = *v, v2;
+
+   switch (ls->t.token) {
+      case TK_CADD: op = OPR_ADD; break;
+      case TK_CSUB: op = OPR_SUB; break;
+      case TK_CMUL: op = OPR_MUL; break;
+      case TK_CDIV: op = OPR_DIV; break;
+      case TK_CMOD: op = OPR_MOD; break;
+      case TK_CPOW: op = OPR_POW; break;
+      case TK_CCONCAT: op = OPR_CONCAT; break;
+   }
+
+   luaK_reserveregs(fs,fs->freereg-fs->nactvar); /* reserve all registers needed by the lvalue */
+   luaX_next(ls);
+   line = ls->linenumber;
+   enterlevel(ls);
+   luaK_infix(fs,op,&e);
+   expr(ls, &v2);
+   luaK_posfix(fs, op, &e, &v2, line);
+   leavelevel(ls);
+   luaK_exp2nextreg(fs, &e);
+   luaK_setoneret(ls->fs, &e);
+   luaK_storevar(ls->fs, v, &e);
+}
+
+
+static void incremental_assignment(LexState* ls, expdesc* v) {
+   int line;
+   FuncState* fs = ls->fs;
+   expdesc e = *v, v2;
+   init_exp(&v2, VKINT, 0);
+   v2.u.ival = 1;
+   luaK_reserveregs(fs, fs->freereg - fs->nactvar); /* reserve all registers needed by the lvalue */
+   luaX_next(ls);
+   line = ls->linenumber;
+   enterlevel(ls);
+   luaK_infix(fs, OPR_ADD, &e);
+   luaK_posfix(fs, OPR_ADD, &e, &v2, line);
+   leavelevel(ls);
+   luaK_exp2nextreg(fs, &e);
+   luaK_setoneret(ls->fs, &e);
+   luaK_storevar(ls->fs, v, &e);
+}
+
+
 static int cond(LexState *ls) {
    /* cond -> exp */
    expdesc v;
@@ -1555,6 +1604,12 @@ static void exprstat(LexState *ls) {
    if (ls->t.token == '=' || ls->t.token == ',') { /* stat -> assignment ? */
       v.prev = NULL;
       assignment(ls, &v, 1);
+   } else if (ls->t.token >= TK_CADD && ls->t.token <= TK_CCONCAT) {
+      v.prev = NULL;
+      compound_assignment(ls, &v.v);
+   } else if (ls->t.token == TK_INC) {
+      v.prev = NULL;
+      incremental_assignment(ls, &v.v);
    } else {  /* stat -> func */
       check_condition(ls, v.v.k == VCALL, "syntax error");
       SETARG_C(getinstruction(fs, &v.v), 1);  /* call statement uses no results */
