@@ -51,6 +51,16 @@ target_compile_options(lualib
         -Wdisabled-optimization -Waggregate-return -Wdouble-promotion -Wdeclaration-after-statement
         -Wmissing-prototypes -Wnested-externs -Wstrict-prototypes -Wc++-compat -Wold-style-definition>)
 
+if (UNIX)
+    set(LUA_DEFINITIONS)
+
+    target_compile_definitions(lualib
+        PUBLIC ${LUA_DEFINITIONS})
+
+    target_compile_options(lualib
+        PRIVATE "-Wall" "-Wextra")
+endif()
+
 add_executable(lua src/lua.c)
 
 target_link_libraries(lua PUBLIC
