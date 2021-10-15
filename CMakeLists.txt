@@ -33,49 +33,52 @@ target_compile_options(luadll
     -Wdisabled-optimization -Waggregate-return -Wdouble-promotion -Wdeclaration-after-statement
     -Wmissing-prototypes -Wnested-externs -Wstrict-prototypes -Wc++-compat -Wold-style-definition>)
 
-add_library(lualib
-        STATIC
-        ${srcFiles})
-
-set_target_properties(lualib PROPERTIES
-        OUTPUT_NAME "lua")
-
-target_compile_definitions(lualib
-        PRIVATE
-        $<$<PLATFORM_ID:Linux>:LUA_USE_LINUX LUA_COMPAT_5_2>)
-
-target_compile_options(lualib
-        PRIVATE
-        $<$<OR:$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:GNU>>:
-        -Wextra -Wshadow -Wsign-compare -Wundef -Wwrite-strings -Wredundant-decls
-        -Wdisabled-optimization -Waggregate-return -Wdouble-promotion -Wdeclaration-after-statement
-        -Wmissing-prototypes -Wnested-externs -Wstrict-prototypes -Wc++-compat -Wold-style-definition>)
-
-if (UNIX)
+add_library(lualib STATIC ${srcFiles})
+set_target_properties(lualib PROPERTIES OUTPUT_NAME "lua")
+target_include_directories(lualib PUBLIC "include")
+if(UNIX)
     set(LUA_DEFINITIONS)
 
-    target_compile_definitions(lualib
-        PUBLIC ${LUA_DEFINITIONS})
+    if(NOT EMSCRIPTEN)
+        find_library(LIBM m)
+        if(NOT LIBM)
+            message(FATAL_ERROR "libm not found and is required by lua")
+        endif()
+        target_link_libraries(lualib INTERFACE ${LIBM})
 
+        list(APPEND LUA_DEFINITIONS LUA_USE_POSIX)
+        if(LUA_SUPPORT_DL)
+            target_compile_definitions(lualib PRIVATE "LUA_USE_DLOPEN")
+            target_link_libraries(lualib INTERFACE dl)
+        endif()
+    endif()
+
+    target_compile_definitions(lualib
+            PUBLIC ${LUA_DEFINITIONS}
+            )
     target_compile_options(lualib
-        PRIVATE "-Wall" "-Wextra")
+            PRIVATE "-Wall" "-Wextra"
+            )
 endif()
 
-add_executable(lua src/lua.c)
+include(CheckIncludeFile)
+CHECK_INCLUDE_FILE("readline/readline.h" HAVE_READLINE_READLINE_H)
 
-target_link_libraries(lua PUBLIC
-    lualib)
-
+add_executable(lua "src/lua.c")
+target_link_libraries(lua PUBLIC lualib)
 set_target_properties(lua PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+        )
+if (HAVE_READLINE_READLINE_H)
+    target_compile_definitions(lua PUBLIC "LUA_USE_READLINE")
+    target_link_libraries(lua PUBLIC readline)
+endif()
 
-add_executable(luac src/luac.c)
-
-target_link_libraries(luac PUBLIC
-    lualib)
-
+add_executable(luac "src/luac.c")
+target_link_libraries(luac PUBLIC lualib)
 set_target_properties(luac PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+        )
 
 set(includeDir ${CMAKE_CURRENT_BINARY_DIR}/include)
 file(COPY ${publicHeaderFiles} DESTINATION ${includeDir})
