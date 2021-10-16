@@ -43,7 +43,7 @@ static const char *const luaX_tokens[] = {
         "//", "..", "...", "==", ">=", "<=", "~=",
         "+=", "-=", "*=", "/=", "%=", "^=", "..=", "++",
         "<<", ">>", "::", "<eof>",
-        "<number>", "<integer>", "<name>", "<string>"
+        "<number>", "<integer>", "<name>", "<string>", "<hash>"
 };
 
 
@@ -96,6 +96,7 @@ static const char *txtToken(LexState *ls, int token) {
    switch (token) {
       case TK_NAME:
       case TK_STRING:
+      case TK_HASH:
       case TK_FLT:
       case TK_INT:
          save(ls, '\0');
@@ -560,6 +561,10 @@ static int llex(LexState *ls, SemInfo *seminfo) {
          case '\'': {  /* short literal strings */
             read_string(ls, ls->current, seminfo);
             return TK_STRING;
+         }
+         case '`': {
+            read_string(ls, ls->current, seminfo);
+            return TK_HASH;
          }
          case '.': {  /* '.', '..', '...', or number */
             save_and_next(ls);
