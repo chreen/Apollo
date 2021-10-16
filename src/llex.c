@@ -508,6 +508,21 @@ static int llex(LexState *ls, SemInfo *seminfo) {
             if (check_next1(ls, '=')) return TK_EQ;
             else return '=';
          }
+         case '!': {
+            next(ls);
+            if (check_next1(ls, '=')) return TK_NE;
+            else return TK_NOT;
+         }
+         case '&': {
+            next(ls);
+            if (check_next1(ls, '&')) return TK_AND;
+            else return '&';
+         }
+         case '|': {
+            next(ls);
+            if (check_next1(ls, '|')) return TK_OR;
+            else return '|';
+         }
          case '<': {
             next(ls);
             if (check_next1(ls, '=')) return TK_LE;
