@@ -20,7 +20,7 @@ add_library(luadll
     ${srcFiles})
 
 set_target_properties(luadll PROPERTIES
-    OUTPUT_NAME "lua")
+    OUTPUT_NAME "apollo")
 
 target_compile_definitions(luadll
     PRIVATE
@@ -34,7 +34,7 @@ target_compile_options(luadll
     -Wmissing-prototypes -Wnested-externs -Wstrict-prototypes -Wc++-compat -Wold-style-definition>)
 
 add_library(lualib STATIC ${srcFiles})
-set_target_properties(lualib PROPERTIES OUTPUT_NAME "lua")
+set_target_properties(lualib PROPERTIES OUTPUT_NAME "apollo")
 target_include_directories(lualib PUBLIC "include")
 if(UNIX)
     set(LUA_DEFINITIONS)
@@ -68,6 +68,7 @@ add_executable(lua "src/lua.c")
 target_link_libraries(lua PUBLIC lualib)
 set_target_properties(lua PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+        OUTPUT_NAME "apollo"
         )
 if (HAVE_READLINE_READLINE_H)
     target_compile_definitions(lua PUBLIC "LUA_USE_READLINE")
@@ -78,6 +79,7 @@ add_executable(luac "src/luac.c")
 target_link_libraries(luac PUBLIC lualib)
 set_target_properties(luac PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}
+        OUTPUT_NAME "apolloc"
         )
 
 set(includeDir ${CMAKE_CURRENT_BINARY_DIR}/include)

@@ -31,7 +31,7 @@
 
 
 const char lua_ident[] =
-        "$LuaVersion: " LUA_COPYRIGHT " $"
+        "$LuaVersion: " LUA_APART " $"
         "$LuaAuthors: " LUA_AUTHORS " $";
 
 

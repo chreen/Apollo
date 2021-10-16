@@ -21,8 +21,8 @@
 
 
 #if !defined(LUA_PROMPT)
-#define LUA_PROMPT      "> "
-#define LUA_PROMPT2      ">> "
+#define LUA_PROMPT      "$ "
+#define LUA_PROMPT2      "$> "
 #endif
 
 #if !defined(LUA_PROGNAME)
@@ -206,7 +206,7 @@ static int docall(lua_State *L, int narg, int nres) {
 
 
 static void print_version(void) {
-   lua_writestring(LUA_COPYRIGHT, strlen(LUA_COPYRIGHT));
+   lua_writestring(LUA_APART, strlen(LUA_APART));
    lua_writeline();
 }
 

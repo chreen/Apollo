@@ -102,7 +102,7 @@ static int doargs(int argc, char *argv[]) {
       argv[--i] = Output;
    }
    if (version) {
-      printf("%s\n", LUA_COPYRIGHT);
+      printf("%s\n", LUA_APART);
       if (version == argc - 1) exit(EXIT_SUCCESS);
    }
    return i;
