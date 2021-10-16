@@ -275,6 +275,9 @@ static lua_Number lua_strx2number(const char *s, char **endptr) {
    return l_mathop(ldexp)(r, e);
 }
 
+#endif
+
+
 /*
 ** convert a binary numeric string to a number, following
 ** C99 specification for 'strtod'
@@ -325,8 +328,6 @@ static lua_Number lua_strb2number(const char *s, char **endptr) {
    if (neg) r = -r;
    return l_mathop(ldexp)(r, e);
 }
-
-#endif
 /* }====================================================== */
 
 
