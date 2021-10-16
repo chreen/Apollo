@@ -302,7 +302,7 @@ static lua_Number lua_strb2number(const char *s, char **endptr) {
       } else if (cast_uchar(*s) == '0' || cast_uchar(*s) == '1') {
          if (sigdig == 0 && *s == '0')  /* non-significant digit (zero)? */
             nosigdig++;
-         else if (++sigdig <= MAXSIGDIG)  /* can read it without overflow? */
+         else if (++sigdig <= 30)  /* can read it without overflow? */
             r = (r * cast_num(2.0)) + luaO_binavalue(*s);
          else e++; /* too many digits; ignore, but still count for exponent */
          if (hasdot) e--;  /* decimal digit? correct exponent */
