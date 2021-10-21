@@ -24,7 +24,7 @@ set_target_properties(luadll PROPERTIES
 
 target_compile_definitions(luadll
     PRIVATE
-    LUA_BUILD_AS_DLL
+    $<$<PLATFORM_ID:Windows>:LUA_BUILD_AS_DLL>
     $<$<PLATFORM_ID:Linux>:LUA_USE_LINUX LUA_COMPAT_5_2>)
 
 target_compile_options(luadll
