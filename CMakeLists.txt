@@ -95,13 +95,27 @@ target_include_directories(lua-header
 
 target_link_libraries(luadll
     INTERFACE
-    lua-header)
+        lua-header)
 
 target_link_libraries(lualib
-    INTERFACE
-    lua-header)
+        INTERFACE
+        lua-header)
 
 
 add_library(lua::lib ALIAS luadll)
 add_library(lua::header ALIAS lua-header)
 
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+endif ()
+
+find_program(BASH_PROGRAM bash)
+
+if (BASH_PROGRAM)
+    add_test(test ${BASH_PROGRAM} ../test/tests.sh)
+
+    set(failRegex "Failed")
+
+    set_property(TEST test
+            PROPERTY FAIL_REGULAR_EXPRESSION "${failRegex}")
+endif (BASH_PROGRAM)
