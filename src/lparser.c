@@ -55,6 +55,11 @@ typedef struct BlockCnt {
 } BlockCnt;
 
 
+#define FSCOPE_LOOP         0x01   /* Scope is a (breakable) for in loop. */
+#define FSCOPE_FORINLOOP      0x02   /* Scope is a (breakable) for in loop. */
+#define FSCOPE_DOWHILELOOP   0x04   /* Scope is a (breakable) do while in loop. */
+
+
 /*
 ** prototypes for recursive non-terminal functions
 */
@@ -103,6 +108,8 @@ static int testnext(LexState *ls, int c) {
 
 
 static void check(LexState *ls, int c) {
+    if (ls->t.token == TK_CONTINUE && c == TK_NAME)
+        return;
     if (ls->t.token != c)
         error_expected(ls, c);
 }
@@ -445,6 +452,18 @@ static void enterblock(FuncState *fs, BlockCnt *bl, lu_byte isloop) {
 
 
 /*
+** create a label named 'continue' to resolve continue statements
+*/
+static void continuelabel(LexState *ls) {
+    TString *n = luaS_new(ls->L, "__APOLLO_continue");
+    int target = ls->fs->pc - 1;
+    if (ls->fs->bl->isloop & (FSCOPE_FORINLOOP | FSCOPE_DOWHILELOOP)) --target;
+    int l = newlabelentry(ls, &ls->dyd->label, n, 0, target);
+    findgotos(ls, &ls->dyd->label.arr[l]);
+}
+
+
+/*
 ** create a label named 'break' to resolve break statements
 */
 static void breaklabel(LexState *ls) {
@@ -475,8 +494,10 @@ static void leaveblock(FuncState *fs) {
         luaK_patchclose(fs, j, bl->nactvar);
         luaK_patchtohere(fs, j);
     }
-    if (bl->isloop)
+    if (bl->isloop) {
+        continuelabel(ls); /* close pending continues */
         breaklabel(ls);  /* close pending breaks */
+    }
     fs->bl = bl->previous;
     removevars(fs, bl->nactvar);
     lua_assert(bl->nactvar == fs->nactvar);
@@ -650,7 +671,7 @@ static void recfield(LexState *ls, struct ConsControl *cc) {
     int reg = ls->fs->freereg;
     expdesc key, val;
     int rkkey;
-    if (ls->t.token == TK_NAME) {
+    if (ls->t.token == TK_NAME || ls->t.token == TK_CONTINUE) {
         checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
         checkname(ls, &key);
     } else  /* ls->t.token == '[' */
@@ -701,7 +722,8 @@ static void listfield(LexState *ls, struct ConsControl *cc) {
 static void field(LexState *ls, struct ConsControl *cc) {
     /* field -> listfield | recfield */
     switch (ls->t.token) {
-        case TK_NAME: {  /* may be 'listfield' or 'recfield' */
+        case TK_NAME:
+        case TK_CONTINUE: {  /* may be 'listfield' or 'recfield' */
             if (luaX_lookahead(ls) != '=')  /* expression? */
                 listfield(ls, cc);
             else
@@ -758,7 +780,8 @@ static void parlist(LexState *ls) {
     if (ls->t.token != ')') {  /* is 'parlist' not empty? */
         do {
             switch (ls->t.token) {
-                case TK_NAME: {  /* param -> NAME */
+                case TK_NAME:
+                case TK_CONTINUE: {  /* param -> NAME */
                     new_localvar(ls, str_checkname(ls));
                     nparams++;
                     break;
@@ -877,7 +900,8 @@ static void primaryexp(LexState *ls, expdesc *v) {
             luaK_dischargevars(ls->fs, v);
             return;
         }
-        case TK_NAME: {
+        case TK_NAME:
+        case TK_CONTINUE: {
             singlevar(ls, v);
             return;
         }
@@ -1227,9 +1251,12 @@ static void gotostat(LexState *ls, int pc) {
     int g;
     if (testnext(ls, TK_GOTO))
         label = str_checkname(ls);
-    else {
+    else if (testnext(ls, TK_BREAK)) {
         luaX_next(ls);  /* skip break */
         label = luaS_new(ls->L, "break");
+    } else {
+        luaX_next(ls); /* skip continue */
+        label = luaS_new(ls->L, "__APOLLO_continue");
     }
     g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
     findlabel(ls, g);  /* close it if label already defined */
@@ -1300,7 +1327,7 @@ static void repeatstat(LexState *ls, int line) {
     FuncState *fs = ls->fs;
     int repeat_init = luaK_getlabel(fs);
     BlockCnt bl1, bl2;
-    enterblock(fs, &bl1, 1);  /* loop block */
+    enterblock(fs, &bl1, FSCOPE_LOOP | FSCOPE_DOWHILELOOP);  /* loop block */
     enterblock(fs, &bl2, 0);  /* scope block */
     luaX_next(ls);  /* skip REPEAT */
     statlist(ls);
@@ -1403,7 +1430,7 @@ static void forstat(LexState *ls, int line) {
     FuncState *fs = ls->fs;
     TString *varname;
     BlockCnt bl;
-    enterblock(fs, &bl, 1);  /* scope for loop and control variables */
+    enterblock(fs, &bl, FSCOPE_LOOP);  /* scope for loop and control variables */
     luaX_next(ls);  /* skip 'for' */
     varname = str_checkname(ls);  /* first variable name */
     switch (ls->t.token) {
@@ -1412,6 +1439,7 @@ static void forstat(LexState *ls, int line) {
             break;
         case ',':
         case TK_IN:
+            bl.isloop |= FSCOPE_FORINLOOP;
             forlist(ls, varname);
             break;
         default:
@@ -1628,6 +1656,16 @@ static void statement(LexState *ls) {
         case TK_BREAK:   /* stat -> breakstat */
         case TK_GOTO: {  /* stat -> 'goto' NAME */
             gotostat(ls, luaK_jump(ls->fs));
+            break;
+        }
+        case TK_CONTINUE: { /* stat -> continuestat | (func | assignment) */
+            int next = luaX_lookahead(ls);
+
+            if (next == '=' || next == ',' || next == '(')
+                exprstat(ls);
+            else if (next != TK_CONTINUE)
+                gotostat(ls, luaK_jump(ls->fs));
+
             break;
         }
         default: {  /* stat -> func | assignment */
