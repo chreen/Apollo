@@ -11,40 +11,40 @@
 #include "lobject.h"
 
 
-#define sizeCclosure(n)   (cast(int, sizeof(CClosure)) + \
+#define sizeCclosure(n)    (cast(int, sizeof(CClosure)) + \
                          cast(int, sizeof(TValue)*((n)-1)))
 
-#define sizeLclosure(n)   (cast(int, sizeof(LClosure)) + \
+#define sizeLclosure(n)    (cast(int, sizeof(LClosure)) + \
                          cast(int, sizeof(TValue *)*((n)-1)))
 
 
 /* test whether thread is in 'twups' list */
-#define isintwups(L)   (L->twups != L)
+#define isintwups(L)    (L->twups != L)
 
 
 /*
 ** maximum number of upvalues in a closure (both C and Lua). (Value
 ** must fit in a VM register.)
 */
-#define MAXUPVAL   255
+#define MAXUPVAL    255
 
 
 /*
 ** Upvalues for Lua closures
 */
 struct UpVal {
-   TValue *v;  /* points to stack or to its own value */
-   lu_mem refcount;  /* reference counter */
-   union {
-      struct {  /* (when open) */
-         UpVal *next;  /* linked list */
-         int touched;  /* mark to avoid cycles with dead threads */
-      } open;
-      TValue value;  /* the value (when closed) */
-   } u;
+    TValue *v;  /* points to stack or to its own value */
+    lu_mem refcount;  /* reference counter */
+    union {
+        struct {  /* (when open) */
+            UpVal *next;  /* linked list */
+            int touched;  /* mark to avoid cycles with dead threads */
+        } open;
+        TValue value;  /* the value (when closed) */
+    } u;
 };
 
-#define upisopen(up)   ((up)->v != &(up)->u.value)
+#define upisopen(up)    ((up)->v != &(up)->u.value)
 
 
 LUAI_FUNC Proto *luaF_newproto(lua_State *L);
