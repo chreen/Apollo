@@ -20,10 +20,10 @@
 #define LUA_VERSION_NUM        503
 #define LUA_VERSION_RELEASE    "6"
 
-#define LUA_VERSION    "Lua " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
-#define LUA_RELEASE    LUA_VERSION "." LUA_VERSION_RELEASE
-#define LUA_COPYRIGHT    LUA_RELEASE "  Copyright (C) 1994-2020 Lua.org, PUC-Rio"
-#define LUA_AUTHORS    "R. Ierusalimschy, L. H. de Figueiredo, W. Celes"
+#define LUA_VERSION   "Apollo " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
+#define LUA_RELEASE   LUA_VERSION "." LUA_VERSION_RELEASE
+#define LUA_APART   LUA_RELEASE " | Apart of Photon"
+#define LUA_AUTHORS   "R. Ierusalimschy, L. H. de Figueiredo, W. Celes"
 
 
 /* mark for precompiled code ('<esc>Lua') */
