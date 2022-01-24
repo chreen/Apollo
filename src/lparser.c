@@ -108,7 +108,7 @@ static int testnext(LexState *ls, int c) {
 
 
 static void check(LexState *ls, int c) {
-    if (ls->t.token == TK_CONTINUE && c == TK_NAME)
+    if ((ls->t.token == TK_CONTINUE && c == TK_NAME) || (ls->t.token == TK_GOTO && c == TK_NAME))
         return;
     if (ls->t.token != c)
         error_expected(ls, c);
@@ -671,7 +671,7 @@ static void recfield(LexState *ls, struct ConsControl *cc) {
     int reg = ls->fs->freereg;
     expdesc key, val;
     int rkkey;
-    if (ls->t.token == TK_NAME || ls->t.token == TK_CONTINUE) {
+    if (ls->t.token == TK_NAME || ls->t.token == TK_CONTINUE || ls->t.token == TK_GOTO) {
         checklimit(fs, cc->nh, MAX_INT, "items in a constructor");
         checkname(ls, &key);
     } else  /* ls->t.token == '[' */
@@ -723,6 +723,7 @@ static void field(LexState *ls, struct ConsControl *cc) {
     /* field -> listfield | recfield */
     switch (ls->t.token) {
         case TK_NAME:
+        case TK_GOTO:
         case TK_CONTINUE: {  /* may be 'listfield' or 'recfield' */
             if (luaX_lookahead(ls) != '=')  /* expression? */
                 listfield(ls, cc);
@@ -781,6 +782,7 @@ static void parlist(LexState *ls) {
         do {
             switch (ls->t.token) {
                 case TK_NAME:
+                case TK_GOTO:
                 case TK_CONTINUE: {  /* param -> NAME */
                     new_localvar(ls, str_checkname(ls));
                     nparams++;
@@ -901,6 +903,7 @@ static void primaryexp(LexState *ls, expdesc *v) {
             return;
         }
         case TK_NAME:
+        case TK_GOTO:
         case TK_CONTINUE: {
             singlevar(ls, v);
             return;
@@ -1653,13 +1656,24 @@ static void statement(LexState *ls) {
             retstat(ls);
             break;
         }
-        case TK_BREAK:   /* stat -> breakstat */
-        case TK_GOTO: {  /* stat -> 'goto' NAME */
+        case TK_BREAK: {  /* stat -> breakstat */
             gotostat(ls, luaK_jump(ls->fs));
             break;
         }
+        case TK_GOTO: {  /* stat -> 'goto' NAME  | (func | assignment) */
+            int next;
+            next = luaX_lookahead(ls);
+
+            if (next == '=' || next == ',' || next == '(')
+                exprstat(ls);
+            else if (next != TK_GOTO)
+                gotostat(ls, luaK_jump(ls->fs));
+
+            break;
+        }
         case TK_CONTINUE: { /* stat -> continuestat | (func | assignment) */
-            int next = luaX_lookahead(ls);
+            int next;
+            next = luaX_lookahead(ls);
 
             if (next == '=' || next == ',' || next == '(')
                 exprstat(ls);
