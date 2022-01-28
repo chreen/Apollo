@@ -561,3 +561,4 @@ local function all_tests_sha2()
 end
 
 all_tests_sha2()
+print()
