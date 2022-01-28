@@ -1291,12 +1291,11 @@ static void gotostat(LexState *ls, int pc) {
     int g;
     if (testnext(ls, TK_GOTO))
         label = str_checkname(ls);
-    else if (testnext(ls, TK_BREAK)) {
+    else if (testnext(ls, TK_CONTINUE)) {
+        label = luaS_new(ls->L, "__APOLLO_continue");
+    } else {
         luaX_next(ls);  /* skip break */
         label = luaS_new(ls->L, "break");
-    } else {
-        luaX_next(ls); /* skip continue */
-        label = luaS_new(ls->L, "__APOLLO_continue");
     }
     g = newlabelentry(ls, &ls->dyd->gt, label, line, pc);
     findlabel(ls, g);  /* close it if label already defined */
