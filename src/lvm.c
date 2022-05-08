@@ -725,7 +725,15 @@ void luaV_finishOp(lua_State *L) {
 }
 
 
-
+static int iter_next(lua_State *L) {
+    lua_settop(L, 2);  /* create a 2nd argument if there isn't one */
+    if (lua_next(L, 1))
+        return 2;
+    else {
+        lua_pushnil(L);
+        return 1;
+    }
+}
 
 /*
 ** {==================================================================
@@ -1247,6 +1255,28 @@ void luaV_execute(lua_State *L) {
             }
             vmcase(OP_TFORCALL) {
                 StkId cb = ra + 3;  /* call base */
+                if ((!ttisfunction(ra)) && (ttisnil(ra + 1)) && (ttisnil(ra + 2))) {
+                    /* Intervene before first iteration if sole iteration value is not an iterator function */
+                    const TValue *tm = luaT_gettmbyobj(L, ra, TM_ITER);
+                    if (ttisnil(tm)) {
+                        if (ttistable(ra)) {
+                            /* Table with no metamethod: default to 'next' */
+                            setobjs2s(L, ra + 1, ra);
+                            setfvalue(ra, iter_next);
+                        }
+                    } else { /* Metamethod found: call it to replace the iteration values */
+                        setobjs2s(L, cb, tm);
+                        setobjs2s(L, cb + 1, ra);
+                        L->top = cb + 2; /* metamethod + object for method call */
+                        Protect(luaD_call(L, cb, 3));
+                        L->top = L->ci->top;
+                        ra = RA(i);
+                        setobj2s(L, ra + 2, cb + 2);
+                        setobj2s(L, ra + 1, cb + 1);
+                        setobj2s(L, ra, cb);
+                        L->top = ra + 3;
+                    }
+                }
                 setobjs2s(L, cb + 2, ra + 2);
                 setobjs2s(L, cb + 1, ra + 1);
                 setobjs2s(L, cb, ra);
