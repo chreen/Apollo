@@ -1,5 +1,3 @@
-print("Testing contextual goto keyword...")
-
 do
     local c = 0
     local f1 = 0
@@ -52,5 +50,3 @@ do
 
     assert(upvalueTest() == 0 and goto == 1, "Failed upvalue test")
 end
-
-print()

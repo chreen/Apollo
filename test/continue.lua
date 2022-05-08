@@ -1,5 +1,3 @@
-print("Testing contextual continue keyword...")
-
 do
     local buf = ""
     for i = 1, 10 do
@@ -62,5 +60,3 @@ do
 
     assert(upvalueTest() == 0 and continue == 1, "Failed upvalue test")
 end
-
-print()

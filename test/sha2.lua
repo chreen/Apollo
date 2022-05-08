@@ -1,5 +1,3 @@
-print("Testing SHA-2...")
-
 -- This module contains functions to calculate SHA2 digest.
 --    Supported hashes: SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, SHA-512/256
 --    This is a pure-Lua module, compatible with Lua 5.1
@@ -561,4 +559,3 @@ local function all_tests_sha2()
 end
 
 all_tests_sha2()
-print()
