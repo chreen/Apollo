@@ -22,7 +22,7 @@
 
 #define LUA_VERSION   "Apollo " LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
 #define LUA_RELEASE   LUA_VERSION "." LUA_VERSION_RELEASE
-#define LUA_APART   LUA_RELEASE " | Apart of Photon"
+#define LUA_APART   LUA_RELEASE "  Copyright (C) 1994-2020 Lua.org, PUC-Rio | modified by chreen"
 #define LUA_AUTHORS   "R. Ierusalimschy, L. H. de Figueiredo, W. Celes"
 
 
